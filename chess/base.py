@@ -6,6 +6,11 @@ class Piece(metaclass=ABCMeta):
     def __init__(self, color = Color.WHITE, state = State.ALIVE):
         self.state = state
         self.color = color
+    
+    @property
+    @abstractmethod
+    def display(self,):
+        pass
 
     @abstractmethod
     def can_move(self, board: 'Board', start: 'Spot', end: 'Spot'):
@@ -14,7 +19,7 @@ class Piece(metaclass=ABCMeta):
 
     @staticmethod
     def get_distance(start: 'Spot', end: 'Spot') -> Tuple['Spot', 'Spot']:
-        return abs(start.x - end.y), abs(start.y - end.y)
+        return abs(start.x - end.x), abs(start.y - end.y)
 
     def moved(self,):
         # do nothing

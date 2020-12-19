@@ -21,23 +21,28 @@ class Pawn(Piece):
         Color.BLACK: '♙',
         Color.WHITE: '♟'
     }
+
+    direction = {
+        Color.WHITE: -1,
+        Color.BLACK: 1
+    }
     
     def can_move(self, board: 'Board', start: 'Spot', end: 'Spot'):
         super().can_move(board, start, end)
-        dy, dx = abs(start.x - end.x), start.y - end.y
-        # print(dx, dy)
+        dy, dx = self.direction[self.color] * (start.x - end.x), abs(start.y - end.y)
+        print(dx, dy)
 
         if dy < 0:
             return False
 
         elif end and end.piece.color != self.color:
-            return dx == dy == 1
+            return abs(dx) == dy == 1
 
         elif dx != 0:
             return False
 
         elif not self.initial:
-            return 0 < dy < 1
+            return 0 < dy <= 1
 
         else:
             return 0 < dy <= 2
@@ -56,7 +61,8 @@ class Knight(Piece):
     
     def can_move(self, board: 'Board', start: 'Spot', end: 'Spot',):
         super().can_move(board, start, end)
-        dx, dy = abs(start.x - end.y), abs(start.y - end.y)
+        dx, dy = self.get_distance(start, end)
+        print(dx, dy)
         return dx * dy == 2
 
 
@@ -68,7 +74,7 @@ class Bishop(Piece):
     
     def can_move(self, board: 'Board', start: 'Spot', end: 'Spot'):
         super().can_move(board, start, end)
-        dx, dy = abs(start.x - end.y), abs(start.y - end.y)
+        dx, dy = self.get_distance(start, end)
         return dx == dy
 
 
@@ -133,10 +139,12 @@ class Player:
         move = input(text)
         if move == 'X':
             return None
-        letter, integer = move[0], move[-1]
-        letter = LETTER_TO_INT[letter.upper()]
-        integer = int(integer) - 1
-        return letter, integer
+        x, y = move[0], move[-1]  # type: str, str
+        
+        x: int = LETTER_TO_INT[x.upper()]
+        y: int = int(y) - 1
+        # print(x, y)
+        return x, y
 
 
     def get_valid_move(

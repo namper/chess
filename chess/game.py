@@ -39,7 +39,6 @@ class Player:
 
         x: int = LETTER_TO_INT[x.upper()]
         y: int = int(y) - 1
-        # print(x, y)
         return x, y
 
     def get_valid_move(

@@ -5,7 +5,7 @@ from utils import *
 
 
 class Spot:
-    def __init__(self, x: int, y: int, piece: Optional[Piece] = None):
+    def __init__(self, x: int, y: int, piece: 'Optional[Piece]' = None):
         self.x = x
         self.y = y
         self.piece = piece
@@ -35,19 +35,14 @@ class Player:
         move = input(text)
         if move == 'X':
             return None
-        x, y = move[0], move[-1]  # type: str, str
 
-        x: int = LETTER_TO_INT[x.upper()]
-        y: int = int(y) - 1
-        return x, y
+        return LETTER_TO_INT[move[0].upper()], int(move[1:]) - 1
 
     def get_valid_move(
             self,
             board: 'Board',
     ) -> Optional[Tuple[Spot, Spot]]:
-        # @TODO: Improve
-        valid = False
-        while not valid:
+        while 1:
             try:
                 start = self.ask_for_move(select=True)
                 if start is None:
@@ -55,13 +50,13 @@ class Player:
                     if y.lower() == 'y':
                         return None
                 end = self.ask_for_move()
-                start, end = board.get_spot(*start), board.get_spot(*end)
-                piece: Piece = start.piece
-                valid = board.current_player.color == piece.color and piece.can_move(board, start, end)
-            except:
-                pass
 
-        return start, end
+                start, end = board.get_spot(*start), board.get_spot(*end)
+                valid = board.current_player.color == start.piece.color and start.piece.can_move(board, start, end)
+                if valid:
+                    return start, end
+            except (IndexError, KeyError, ValueError):
+                pass
 
     def __bool__(self, ):
         return self.turn

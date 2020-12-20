@@ -1,110 +1,7 @@
-from typing import NewType, Tuple, Optional, TYPE_CHECKING
-from base import Piece
-from utils import Color, State, GameStatus, LETTER_TO_INT, skip_errors
+from typing import Optional, List
 
-class Rook(Piece):
-    display = {
-        Color.BLACK: '♖',
-        Color.WHITE: '♜'
-    }
-
-    def can_move(self, board: 'Board', start: 'Spot', end: 'Spot'):
-        super().can_move(board, start, end)
-        dist_x, dist_y = self.get_distance(start, end)
-        return dist_x * dist_y == 0
-        
-
-
-class Pawn(Piece):
-    initial = True
-    display = {
-        Color.BLACK: '♙',
-        Color.WHITE: '♟'
-    }
-
-    direction = {
-        Color.WHITE: -1,
-        Color.BLACK: 1
-    }
-    
-    def can_move(self, board: 'Board', start: 'Spot', end: 'Spot'):
-        super().can_move(board, start, end)
-        dy, dx = self.direction[self.color] * (start.x - end.x), abs(start.y - end.y)
-        print(dx, dy)
-
-        if dy < 0:
-            return False
-
-        elif end and end.piece.color != self.color:
-            return abs(dx) == dy == 1
-
-        elif dx != 0:
-            return False
-
-        elif not self.initial:
-            return 0 < dy <= 1
-
-        else:
-            return 0 < dy <= 2
-    
-    def moved(self, ):
-        self.initial = False
-
-
-
-class Knight(Piece):
-    display = {
-        Color.BLACK: '♘',
-        Color.WHITE: '♞'
-    }
-    
-    
-    def can_move(self, board: 'Board', start: 'Spot', end: 'Spot',):
-        super().can_move(board, start, end)
-        dx, dy = self.get_distance(start, end)
-        print(dx, dy)
-        return dx * dy == 2
-
-
-class Bishop(Piece):
-    display = {
-        Color.BLACK: '♗',
-        Color.WHITE: '♝'
-    }
-    
-    def can_move(self, board: 'Board', start: 'Spot', end: 'Spot'):
-        super().can_move(board, start, end)
-        dx, dy = self.get_distance(start, end)
-        return dx == dy
-
-
-
-class King(Piece):
-    display = {
-        Color.BLACK: '♔',
-        Color.WHITE: '♚'
-    }
-    castled = False
-    can_castle = True
-
-    
-    def can_move(self, board: 'Board', start: 'Spot', end: 'Spot'):
-        super(board, start, end)
-        dx, dy = self.get_distance(start, end)
-        return dx + dy == 1
-    
-
-class Queen(Piece):
-    display = {
-        Color.BLACK: '♛',
-        Color.WHITE: '♕'
-    }
-    
-    def can_move(self, board: 'Board', start: 'Spot', end: 'Spot'):
-        super(board, start, end)
-        dx, dy = self.get_distance(start, end)
-        return dx * dy == 0 or dx == dy
-
+from pieces import *
+from utils import *
 
 
 class Spot:
@@ -113,21 +10,20 @@ class Spot:
         self.y = y
         self.piece = piece
 
-    def __str__(self,):
+    def __str__(self, ):
         if self:
             return str(self.piece)
         return ' '
-    
+
     def __repr__(self, ):
         return str(self)
 
-    def __bool__(self,):
+    def __bool__(self, ):
         return self.piece is not None
 
 
-
 class Player:
-    def __init__(self, turn = True, color = Color.WHITE):
+    def __init__(self, turn=True, color=Color.WHITE):
         self.color = color
         self.turn = turn
 
@@ -140,17 +36,17 @@ class Player:
         if move == 'X':
             return None
         x, y = move[0], move[-1]  # type: str, str
-        
+
         x: int = LETTER_TO_INT[x.upper()]
         y: int = int(y) - 1
         # print(x, y)
         return x, y
 
-
     def get_valid_move(
-        self,
-        board: 'Board',
-        ) -> Optional[Tuple[Spot, Spot]]:
+            self,
+            board: 'Board',
+    ) -> Optional[Tuple[Spot, Spot]]:
+        # @TODO: Improve
         valid = False
         while not valid:
             try:
@@ -162,34 +58,36 @@ class Player:
                 end = self.ask_for_move()
                 start, end = board.get_spot(*start), board.get_spot(*end)
                 piece: Piece = start.piece
-                valid = board.current_player.color == piece.color and piece.can_move(self, start, end)
+                valid = board.current_player.color == piece.color and piece.can_move(board, start, end)
             except:
                 pass
+
         return start, end
 
     def __bool__(self, ):
         return self.turn
 
-    def __str__(self,):
+    def __str__(self, ):
         return self.color.name.lower() + ' Player'
-    
-    def __repr__(self,):
-        return str(self)
 
+    def __repr__(self, ):
+        return str(self)
 
 
 class Board:
     def __init__(self, player_1: Player, player_2: Player, ):
-        self.setup_players(player_1, player_2)                
-        self.setup()
-        self.status = GameStatus.ACTIVE
-
-    def get_spot(self, x, y):
-        return self.board[y][x]
-
-    def setup_players(self, player_1, player_2):
+        self.board: 'List[List[Spot]]' = []
         self.player_1 = player_1
         self.player_2 = player_2
+        self.setup_players()
+        self.setup()
+        self.status = GameStatus.ACTIVE
+        self.current_player = self.player_1 or self.player_2
+
+    def get_spot(self, x, y) -> 'Optional[Spot]':
+        return self.board[y][x]
+
+    def setup_players(self, ):
 
         if self.player_1.color == Color.WHITE:
             self.player_1.turn = True
@@ -200,13 +98,9 @@ class Board:
             self.player_2.turn = True
             self.player_1.color = Color.BLACK
             self.player_1.turn = False
-        
-        self.current_player = self.player_1 or self.player_2
 
     def setup(self):
-        self.board = [[None]*8]*8
-
-        self.board[0] = [
+        self.board.append([
             Spot(0, 0, Rook(Color.WHITE)),
             Spot(0, 1, Knight(Color.WHITE)),
             Spot(0, 2, Bishop(Color.WHITE)),
@@ -215,8 +109,8 @@ class Board:
             Spot(0, 5, Bishop(Color.WHITE)),
             Spot(0, 6, Knight(Color.WHITE)),
             Spot(0, 7, Rook(Color.WHITE))
-        ]
-        self.board[1] = [
+        ])
+        self.board.append([
             Spot(1, 0, Pawn(Color.WHITE)),
             Spot(1, 0, Pawn(Color.WHITE)),
             Spot(1, 2, Pawn(Color.WHITE)),
@@ -225,19 +119,14 @@ class Board:
             Spot(1, 5, Pawn(Color.WHITE)),
             Spot(1, 6, Pawn(Color.WHITE)),
             Spot(1, 7, Pawn(Color.WHITE)),
-        ]
+        ])
 
-        self.board[7] = [
-            Spot(7, 0, Rook(Color.BLACK)),
-            Spot(7, 1, Knight(Color.BLACK)),
-            Spot(7, 2, Bishop(Color.BLACK)),
-            Spot(7, 3, Queen(Color.BLACK)),
-            Spot(7, 4, King(Color.BLACK)),
-            Spot(7, 5, Bishop(Color.BLACK)),
-            Spot(7, 6, Knight(Color.BLACK)),
-            Spot(7, 7, Rook(Color.BLACK))
-        ]
-        self.board[6] = [
+        for i in range(2, 6):
+            self.board.append([
+                Spot(i, j) for j in range(0, 8)
+            ])
+
+        self.board.append([
             Spot(6, 0, Pawn(Color.BLACK)),
             Spot(6, 0, Pawn(Color.BLACK)),
             Spot(6, 2, Pawn(Color.BLACK)),
@@ -246,29 +135,36 @@ class Board:
             Spot(6, 5, Pawn(Color.BLACK)),
             Spot(6, 6, Pawn(Color.BLACK)),
             Spot(6, 7, Pawn(Color.BLACK)),
-        ]
+        ])
 
-        for i in range(2, 6):
-            self.board[i] = [
-                Spot(i, j) for j in range(0, 8)
-            ]
+        self.board.append([
+            Spot(7, 0, Rook(Color.BLACK)),
+            Spot(7, 1, Knight(Color.BLACK)),
+            Spot(7, 2, Bishop(Color.BLACK)),
+            Spot(7, 3, Queen(Color.BLACK)),
+            Spot(7, 4, King(Color.BLACK)),
+            Spot(7, 5, Bishop(Color.BLACK)),
+            Spot(7, 6, Knight(Color.BLACK)),
+            Spot(7, 7, Rook(Color.BLACK))
+        ])
 
-    def change_turn(self,):
+    def change_turn(self, ):
         self.player_1.turn = not self.player_1.turn
         self.player_2.turn = not self.player_2.turn
         self.current_player = self.player_1 or self.player_2
 
-    def make_move(self, start: Spot, end: Spot):
+    @staticmethod
+    def make_move(start: Spot, end: Spot):
         piece = start.piece
         start.piece = None
         end.piece = piece
         piece.moved()
 
-    def game(self,):
+    def game(self, ):
         while self.status == GameStatus.ACTIVE:
             move = self.current_player.get_valid_move(
-                    board=self
-                )
+                board=self
+            )
 
             if move is None:
                 self.status = GameStatus.FORFEIT
@@ -278,13 +174,13 @@ class Board:
             print(self)
             self.change_turn()
 
-    def __repr__(self,):
+    def __repr__(self, ):
         return str(self)
 
     def __str__(self):
         board = "   ---------------------------------------"
         for y in range(7, -1, -1):
-            board += f'\n {y+1}|'
+            board += f'\n {y + 1}|'
             for x in range(0, 8):
                 board += f' [{self.board[y][x]}] '
         board += "\n   ---------------------------------------\n"

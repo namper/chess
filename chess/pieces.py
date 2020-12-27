@@ -39,8 +39,18 @@ class Rook(Piece):
 
     def can_move(self, board: 'game.Board', start: 'game.Spot', end: 'game.Spot'):
         super().can_move(board, start, end)
-        dist_x, dist_y = self.get_distance(start, end)
-        return dist_x * dist_y == 0
+        dx, dy = self.get_distance(start, end)
+        if dx * dy != 0:
+            return False
+        elif dx != 0:
+            start_x, end_x = sorted([start.x, end.x])
+            return not any(board.board[start.y][start_x + 1:end_x])
+        else:
+            start_y, end_y = sorted([start.y, end.y])
+            for y in range(start_y + 1, end_y):
+                if board.get_spot(start.x, y):
+                    return False
+        return True
 
 
 class Pawn(Piece):
@@ -96,8 +106,21 @@ class Bishop(Piece):
 
     def can_move(self, board: 'game.Board', start: 'game.Spot', end: 'game.Spot', ):
         super().can_move(board, start, end)
-        dx, dy = self.get_distance(start, end)
-        return dx == dy
+        dx, dy = end.x - start.x, end.y - start.y
+
+        if abs(dx) != abs(dy):
+            return False
+
+        x_inc = dx // abs(dx)
+        y_inc = dy // abs(dy)
+        x, y = start.x, start.y
+        for k in range(abs(dx)):
+            x += x_inc
+            y += y_inc
+            if board.get_spot(x, y):
+                return False
+
+        return True
 
 
 class King(Piece):
@@ -125,5 +148,27 @@ class Queen(Piece):
 
     def can_move(self, board: 'game.Board', start: 'game.Spot', end: 'game.Spot'):
         super().can_move(board, start, end)
-        dx, dy = self.get_distance(start, end)
-        return dx * dy == 0 or dx == dy
+        dx, dy = end.x - start.x, end.y - start.y
+        if dx * dy == 0:
+            if dx != 0:
+                start_x, end_x = sorted([start.x, end.x])
+                return not any(board.board[start.y][start_x + 1:end_x])
+            else:
+                start_y, end_y = sorted([start.y, end.y])
+                for y in range(start_y + 1, end_y):
+                    if board.get_spot(start.x, y):
+                        return False
+        else:
+            if abs(dx) != abs(dy):
+                return False
+
+            x_inc = dx // abs(dx)
+            y_inc = dy // abs(dy)
+            x, y = start.x, start.y
+            for k in range(abs(dx)):
+                x += x_inc
+                y += y_inc
+                if board.get_spot(x, y):
+                    return False
+
+        return True

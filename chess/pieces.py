@@ -17,7 +17,7 @@ class Piece(metaclass=ABCMeta):
 
     @abstractmethod
     def can_move(self, board: 'game.Board', start: 'game.Spot', end: 'game.Spot'):
-        if end and end.piece.color == self.color:
+        if (start is end) or (end and end.piece.color == self.color):
             return False
 
     @staticmethod
@@ -44,7 +44,6 @@ class Rook(Piece):
 
 
 class Pawn(Piece):
-    initial = True
     display = {
         Color.BLACK: '♙',
         Color.WHITE: '♟'
@@ -55,25 +54,23 @@ class Pawn(Piece):
         Color.BLACK: 1
     }
 
-    def can_move(self, board: 'game.Board', start: 'game.Spot', end: 'game.Spot'):
-        super().can_move(board, start, end)
-        dy, dx = self.direction[self.color] * (start.x - end.x), abs(start.y - end.y)
-        print(dx, dy)
+    initial = True
 
-        if dy < 0:
+    def can_move(self, board: 'game.Board', start: 'game.Spot', end: 'game.Spot', ):
+        super().can_move(board, start, end)
+        dy = self.direction[self.color] * (start.y - end.y)
+        dx = abs(start.x - end.x)
+
+        if dy <= 0:
             return False
 
         elif end and end.piece.color != self.color:
             return abs(dx) == dy == 1
 
-        elif dx != 0:
-            return False
-
-        elif not self.initial:
-            return 0 < dy <= 1
-
-        else:
+        elif self.initial:
             return 0 < dy <= 2
+
+        return 0 < dy <= 1
 
     def moved(self, ):
         self.initial = False
@@ -88,7 +85,6 @@ class Knight(Piece):
     def can_move(self, board: 'game.Board', start: 'game.Spot', end: 'game.Spot', ):
         super().can_move(board, start, end)
         dx, dy = self.get_distance(start, end)
-        print(dx, dy)
         return dx * dy == 2
 
 
@@ -115,7 +111,7 @@ class King(Piece):
     def can_move(self, board: 'game.Board', start: 'game.Spot', end: 'game.Spot'):
         super().can_move(board, start, end)
         dx, dy = self.get_distance(start, end)
-        return dx + dy == 1
+        return (dy + dx == 1) or (dx == 1 and dy == 1)
 
     def moved(self, ):
         self.can_castle = False

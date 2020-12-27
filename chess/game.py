@@ -5,7 +5,7 @@ from utils import *
 
 
 class Spot:
-    def __init__(self, x: int, y: int, piece: 'Optional[Piece]' = None):
+    def __init__(self, y: int, x: int, piece: 'Optional[Piece]' = None):
         self.x = x
         self.y = y
         self.piece = piece
@@ -23,7 +23,7 @@ class Spot:
 
 
 class Player:
-    def __init__(self, turn=True, color=Color.WHITE):
+    def __init__(self, color=Color.WHITE, turn=False):
         self.color = color
         self.turn = turn
 
@@ -38,26 +38,6 @@ class Player:
 
         return LETTER_TO_INT[move[0].upper()], int(move[1:]) - 1
 
-    def get_valid_move(
-            self,
-            board: 'Board',
-    ) -> Optional[Tuple[Spot, Spot]]:
-        while 1:
-            try:
-                start = self.ask_for_move(select=True)
-                if start is None:
-                    y = input('Are you sure to forfeit: [Y/y]: ')
-                    if y.lower() == 'y':
-                        return None
-                end = self.ask_for_move()
-
-                start, end = board.get_spot(*start), board.get_spot(*end)
-                valid = board.current_player.color == start.piece.color and start.piece.can_move(board, start, end)
-                if valid:
-                    return start, end
-            except (IndexError, KeyError, ValueError):
-                pass
-
     def __bool__(self, ):
         return self.turn
 
@@ -69,29 +49,12 @@ class Player:
 
 
 class Board:
-    def __init__(self, player_1: Player, player_2: Player, ):
+    def __init__(self, ):
         self.board: 'List[List[Spot]]' = []
-        self.player_1 = player_1
-        self.player_2 = player_2
-        self.setup_players()
         self.setup()
-        self.status = GameStatus.ACTIVE
-        self.current_player = self.player_1 or self.player_2
 
     def get_spot(self, x, y) -> 'Optional[Spot]':
         return self.board[y][x]
-
-    def setup_players(self, ):
-
-        if self.player_1.color == Color.WHITE:
-            self.player_1.turn = True
-            self.player_2.color = Color.BLACK
-            self.player_2.turn = False
-        else:
-            self.player_2.color = Color.White
-            self.player_2.turn = True
-            self.player_1.color = Color.BLACK
-            self.player_1.turn = False
 
     def setup(self):
         self.board.append([
@@ -142,32 +105,6 @@ class Board:
             Spot(7, 7, Rook(Color.BLACK))
         ])
 
-    def change_turn(self, ):
-        self.player_1.turn = not self.player_1.turn
-        self.player_2.turn = not self.player_2.turn
-        self.current_player = self.player_1 or self.player_2
-
-    @staticmethod
-    def make_move(start: Spot, end: Spot):
-        piece = start.piece
-        start.piece = None
-        end.piece = piece
-        piece.moved()
-
-    def game(self, ):
-        while self.status == GameStatus.ACTIVE:
-            move = self.current_player.get_valid_move(
-                board=self
-            )
-
-            if move is None:
-                self.status = GameStatus.FORFEIT
-                break
-
-            self.make_move(*move)
-            print(self)
-            self.change_turn()
-
     def __repr__(self, ):
         return str(self)
 
@@ -182,7 +119,55 @@ class Board:
         return board
 
 
+class Game:
+    def __init__(self):
+        self.board = Board()
+        self.player_1 = Player(Color.WHITE, True)
+        self.player_2 = Player(Color.BLACK, False)
+        self.current_player = self.player_1 or self.player_2
+        self.status = GameStatus.ACTIVE
+
+    def update_turn(self):
+        self.player_1.turn = not self.player_1
+        self.player_2.turn = not self.player_2
+        self.current_player = self.player_1 or self.player_2
+
+    @staticmethod
+    def make_move(start: Spot, end: Spot):
+        piece = start.piece
+        start.piece = None
+        end.piece = piece
+        piece.moved()
+
+    def run(self, ):
+        print(self.board)
+        while self.status == GameStatus.ACTIVE:
+            move = self.get_valid_move()
+            if move is None:
+                self.status = GameStatus.FORFEIT
+                break
+            self.make_move(*move)
+            print(self.board)
+            self.update_turn()
+
+    def get_valid_move(self) -> Optional[Tuple[Spot, Spot]]:
+        while 1:
+            try:
+                start = self.current_player.ask_for_move(select=True)
+                if start is None:
+                    y = input('Are you sure to forfeit: [Y/y]: ')
+                    if y.lower() == 'y':
+                        return None
+                end = self.current_player.ask_for_move()
+
+                start, end = self.board.get_spot(*start), self.board.get_spot(*end)
+                valid = self.current_player.color == start.piece.color and start.piece.can_move(self.board, start, end)
+                if valid:
+                    return start, end
+            except (IndexError, KeyError, ValueError):
+                pass
+
+
 if __name__ == '__main__':
-    b = Board(Player(), Player())
-    print(b)
-    b.game()
+    game = Game()
+    game.run()
